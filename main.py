@@ -29,7 +29,7 @@ def get_embedding(texts):
     inputs = tokenizer_emb(texts, return_tensors="pt", padding=True, truncation=True).to(device)
     with torch.no_grad():
         outputs = model_emb(**inputs)
-        embeddings = outputs.pooler_output  # + rapide et + fiable que mean
+        embeddings = outputs.pooler_output  # Utilisation de pooler_output
     return embeddings.cpu().numpy()
 
 # --- 3. Génération ou chargement des embeddings ---
@@ -61,6 +61,10 @@ generator = pipeline("text2text-generation", model=model_gen, tokenizer=tokenize
 def retrieve_documents(query, k=3, threshold=13):
     query_emb = get_embedding([query])
     distances, indices = index.search(query_emb, k)
+    
+    # 👇 Debug : Afficher les distances
+    print("📏 Distances :", distances[0])
+    
     return [
         knowledge_base[int(idx)]["texte"]
         for dist, idx in zip(distances[0], indices[0])
@@ -68,7 +72,7 @@ def retrieve_documents(query, k=3, threshold=13):
     ]
 
 # --- 6. Génération de réponse ---
-cache = {}  # pour éviter de recalculer les mêmes réponses
+cache = {}
 
 def generate_answer(query, retrieved_docs):
     key = (query, tuple(retrieved_docs))
