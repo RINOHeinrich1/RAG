@@ -11,6 +11,7 @@ data = {
     "texte": [
         "La capitale de la France est Paris.",
         "Le Mont Everest est la plus haute montagne du monde.",
+        "Le Mont Everest mesure 8,849 m",
         "La Tour Eiffel se trouve à Paris.",
         "La Grande Muraille de Chine est visible depuis l'espace.",
         "Python est un langage de programmation populaire."
@@ -106,7 +107,7 @@ def generate_answer(query, retrieved_docs):
 
 # --- 7. Exemple d'utilisation ---
 if __name__ == "__main__":
-    question = "quelle est le capitale de la France?"
+    question = "quelle est le plus haut sommet du monde?"
     documents = retrieve_documents(question, k=3, threshold=28)
     print("📄 Documents récupérés :", documents)
     reponse = generate_answer(question, documents)
