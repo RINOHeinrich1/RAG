@@ -19,8 +19,8 @@ data = {
 knowledge_base = Dataset.from_pandas(pd.DataFrame(data))
 
 # --- 2. Chargement du modèle de vecteurs ---
-tokenizer_emb = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
-model_emb = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+tokenizer_emb = AutoTokenizer.from_pretrained("sentence-transformers/paraphrase-mpnet-base-v2")
+model_emb = AutoModel.from_pretrained("sentence-transformers/paraphrase-mpnet-base-v2")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_emb.to(device)
@@ -58,7 +58,7 @@ model_gen = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 generator = pipeline("text2text-generation", model=model_gen, tokenizer=tokenizer_gen, device=0 if torch.cuda.is_available() else -1)
 
 # --- 5. Recherche sémantique ---
-def retrieve_documents(query, k=3, threshold=13):
+def retrieve_documents(query, k=3, threshold=1):
     query_emb = get_embedding([query])
     distances, indices = index.search(query_emb, k)
     
@@ -84,18 +84,18 @@ def generate_answer(query, retrieved_docs):
 
     contexte = "\n---\n".join(retrieved_docs)
     prompt = (
-        f"Contexte :\n{contexte}\n\n"
-        f"Question : {query}\n"
-        "Réponds uniquement à la question en utilisant uniquement le contexte fourni.\n"
-        "Si tu ne sais pas, réponds 'Je ne sais pas'.\n"
-        "Réponse :"
+        f"Contexte: {contexte}\n\n"
+        f"Question: {query}\n\n"
+        "Réponds uniquement à la question en utilisant uniquement le contexte fourni.\n\n"
+        "Si tu ne sais pas, réponds 'Je ne sais pas'.\n\n"
+        f"Réponse:"
     )
 
     outputs = generator(
         prompt,
         max_new_tokens=100,
         do_sample=True,
-        temperature=0.7,
+        temperature=0.5,
         num_return_sequences=1
     )
     answer = outputs[0]['generated_text'].strip()
@@ -107,8 +107,8 @@ def generate_answer(query, retrieved_docs):
 
 # --- 7. Exemple d'utilisation ---
 if __name__ == "__main__":
-    question = "Où se trouve la Tour Eiffel ?"
-    documents = retrieve_documents(question, k=3, threshold=13)
+    question = "localisation de la tour eiffel?"
+    documents = retrieve_documents(question, k=3, threshold=3)
     print("📄 Documents récupérés :", documents)
     reponse = generate_answer(question, documents)
     print("🤖 Réponse générée :", reponse)
