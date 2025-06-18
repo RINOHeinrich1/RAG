@@ -1,6 +1,6 @@
 from datasets import Dataset
 import pandas as pd
-from transformers import AutoTokenizer, AutoModel, AutoModelForSeq2SeqLM, pipeline
+from transformers import CamembertTokenizer,AutoTokenizer, AutoModel, AutoModelForSeq2SeqLM, pipeline
 import torch
 import numpy as np
 import faiss
@@ -19,8 +19,8 @@ data = {
 knowledge_base = Dataset.from_pandas(pd.DataFrame(data))
 
 # --- 2. Chargement du modèle de vecteurs ---
-tokenizer_emb = AutoTokenizer.from_pretrained("sentence-transformers/paraphrase-mpnet-base-v2")
-model_emb = AutoModel.from_pretrained("sentence-transformers/paraphrase-mpnet-base-v2")
+tokenizer_emb = CamembertTokenizer.from_pretrained("dangvantuan/sentence-camembert-large")
+model_emb = AutoModel.from_pretrained("dangvantuan/sentence-camembert-large")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model_emb.to(device)
@@ -84,12 +84,11 @@ def generate_answer(query, retrieved_docs):
 
     contexte = "\n---\n".join(retrieved_docs)
     prompt = (
-        f"Contexte: {contexte}\n\n"
-        f"Question: {query}\n\n"
-        "Réponds uniquement à la question en utilisant uniquement le contexte fourni.\n\n"
-        "Si tu ne sais pas, réponds 'Je ne sais pas'.\n\n"
+        f"{contexte}\n"
+        f"Question: {query}\n"
         f"Réponse:"
     )
+
 
     outputs = generator(
         prompt,
@@ -107,8 +106,8 @@ def generate_answer(query, retrieved_docs):
 
 # --- 7. Exemple d'utilisation ---
 if __name__ == "__main__":
-    question = "localisation de la tour eiffel?"
-    documents = retrieve_documents(question, k=3, threshold=3)
+    question = "quelle est le capitale de la France?"
+    documents = retrieve_documents(question, k=3, threshold=28)
     print("📄 Documents récupérés :", documents)
     reponse = generate_answer(question, documents)
     print("🤖 Réponse générée :", reponse)
