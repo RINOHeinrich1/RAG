@@ -4,8 +4,9 @@ from transformers import AutoTokenizer, AutoModel, AutoModelForSeq2SeqLM, pipeli
 import torch
 import numpy as np
 import faiss
+import os
 
-# --- 1. Préparation de la base de connaissances en français ---
+# --- 1. Préparation de la base de connaissances ---
 data = {
     "texte": [
         "La capitale de la France est Paris.",
@@ -17,69 +18,93 @@ data = {
 }
 knowledge_base = Dataset.from_pandas(pd.DataFrame(data))
 
-# --- 2. Chargement du tokenizer et modèle pour créer les embeddings ---
+# --- 2. Chargement du modèle de vecteurs ---
 tokenizer_emb = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
 model_emb = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model_emb.to(device)
+
 def get_embedding(texts):
-    inputs = tokenizer_emb(texts, return_tensors="pt", padding=True, truncation=True)
+    inputs = tokenizer_emb(texts, return_tensors="pt", padding=True, truncation=True).to(device)
     with torch.no_grad():
         outputs = model_emb(**inputs)
-        embeddings = outputs.last_hidden_state.mean(dim=1)
+        embeddings = outputs.pooler_output  # + rapide et + fiable que mean
     return embeddings.cpu().numpy()
 
-# --- 3. Création des embeddings pour la base de connaissances ---
-embeddings = []
-batch_size = 16
-texts = knowledge_base["texte"]
-for i in range(0, len(texts), batch_size):
-    batch_texts = texts[i:i+batch_size]
-    batch_emb = get_embedding(batch_texts)
-    embeddings.append(batch_emb)
-embeddings = np.vstack(embeddings)
+# --- 3. Génération ou chargement des embeddings ---
+EMB_FILE = "embeddings.npy"
+INDEX_FILE = "faiss.index"
 
-# --- 4. Création de l’index FAISS pour la recherche rapide ---
-dimension = embeddings.shape[1]
-index = faiss.IndexFlatL2(dimension)
-index.add(embeddings)
+if os.path.exists(EMB_FILE) and os.path.exists(INDEX_FILE):
+    print("🔄 Chargement des embeddings et de l'index FAISS depuis disque...")
+    embeddings = np.load(EMB_FILE)
+    index = faiss.read_index(INDEX_FILE)
+else:
+    print("⚙️ Génération des embeddings et de l'index FAISS...")
+    texts = knowledge_base["texte"]
+    embeddings = get_embedding(texts)
+    np.save(EMB_FILE, embeddings)
 
-# --- 5. Chargement du modèle francophone pour la génération de texte ---
+    dimension = embeddings.shape[1]
+    index = faiss.IndexFlatL2(dimension)
+    index.add(embeddings)
+    faiss.write_index(index, INDEX_FILE)
+
+# --- 4. Chargement du modèle de génération francophone ---
 model_name = "moussaKam/barthez"
 tokenizer_gen = AutoTokenizer.from_pretrained(model_name)
 model_gen = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-generator = pipeline("text2text-generation", model=model_gen, tokenizer=tokenizer_gen)
+generator = pipeline("text2text-generation", model=model_gen, tokenizer=tokenizer_gen, device=0 if torch.cuda.is_available() else -1)
 
-# --- 6. Fonction pour récupérer les documents pertinents ---
-def retrieve_documents(query, k=1):
+# --- 5. Recherche sémantique ---
+def retrieve_documents(query, k=3, threshold=13):
     query_emb = get_embedding([query])
     distances, indices = index.search(query_emb, k)
-    results = []
-    for idx in indices[0]:
-        if idx == -1:
-            continue
-        results.append(knowledge_base[int(idx)]["texte"])
-    return results
+    return [
+        knowledge_base[int(idx)]["texte"]
+        for dist, idx in zip(distances[0], indices[0])
+        if idx != -1 and dist <= threshold
+    ]
 
-# --- 7. Fonction pour générer la réponse ---
+# --- 6. Génération de réponse ---
+cache = {}  # pour éviter de recalculer les mêmes réponses
+
 def generate_answer(query, retrieved_docs):
+    key = (query, tuple(retrieved_docs))
+    if key in cache:
+        return cache[key]
+
     if not retrieved_docs:
         return "Je ne dispose pas d'informations pertinentes pour répondre à cette question."
+
     contexte = "\n---\n".join(retrieved_docs)
     prompt = (
-        f"Voici un contexte en français :\n{contexte}\n\n"
-        "Utilise uniquement ce contexte pour répondre à la question suivante en français. "
-        "Si la réponse n'est pas dans ce contexte, réponds 'Je ne sais pas'.\n"
+        f"Contexte :\n{contexte}\n\n"
         f"Question : {query}\n"
-        f"Réponse :"
+        "Réponds uniquement à la question en utilisant uniquement le contexte fourni.\n"
+        "Si tu ne sais pas, réponds 'Je ne sais pas'.\n"
+        "Réponse :"
     )
-    outputs = generator(prompt, max_new_tokens=100)
+
+    outputs = generator(
+        prompt,
+        max_new_tokens=100,
+        do_sample=True,
+        temperature=0.7,
+        num_return_sequences=1
+    )
     answer = outputs[0]['generated_text'].strip()
+    if "Réponse :" in answer:
+        answer = answer.split("Réponse :")[-1].strip()
+
+    cache[key] = answer
     return answer
 
-# --- 8. Exemple d’utilisation ---
+# --- 7. Exemple d'utilisation ---
 if __name__ == "__main__":
-    question_utilisateur = "Parle du grand muraille de chine ?"
-    docs = retrieve_documents(question_utilisateur, k=1)
-    print("Documents récupérés :", docs)
-    reponse = generate_answer(question_utilisateur, docs)
-    print("Réponse générée :", reponse)
+    question = "Où se trouve la Tour Eiffel ?"
+    documents = retrieve_documents(question, k=3, threshold=13)
+    print("📄 Documents récupérés :", documents)
+    reponse = generate_answer(question, documents)
+    print("🤖 Réponse générée :", reponse)
