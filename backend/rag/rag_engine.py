@@ -22,7 +22,8 @@ def generate_answer(query, docs):
     if not docs:
         return "Je ne dispose pas d'informations pertinentes pour répondre à cette question."
 
-    contexte = "\n---\n".join(docs)
+    #contexte = "\n---\n".join(docs)
+    contexte = docs[0]
     prompt = f"{contexte}\nQuestion: {query}\nRéponse:"
 
     result = generate(prompt)
