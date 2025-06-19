@@ -4,13 +4,12 @@ import pandas as pd
 def load_knowledge_base():
     data = {
         "texte": [
-            "La capitale de la France est Paris.",
-            "Le Mont Everest est la plus haute montagne du monde.",
-            "Le Mont Everest mesure 8,849 m",
-            "La Tour Eiffel se trouve à Paris.",
-            "La Grande Muraille de Chine est visible depuis l'espace.",
-            "La grande muraille se trouve en chine",
-            "Python est un langage de programmation populaire."
+            "la capitale de la france est paris.",
+            "la tour eiffel se trouve à paris.",
+            "le mont everest est la plus haute montagne du monde. il mesure 8 849 mètres.",
+            "la grande muraille de chine est visible depuis l'espace. elle se trouve en chine.",
+            "python est un langage de programmation populaire."
         ]
     }
-    return Dataset.from_pandas(pd.DataFrame(data))
+    df = pd.DataFrame(data)
+    return Dataset.from_pandas(df)

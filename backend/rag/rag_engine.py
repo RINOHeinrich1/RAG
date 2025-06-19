@@ -4,7 +4,7 @@ from rag.generation import generate
 from rag.knowledge_base import load_knowledge_base
 from rag.cache import get_cache, set_cache
 
-def retrieve_documents(index, dataset, query, k=3, threshold=34):
+def retrieve_documents(index, dataset, query, k=3, threshold=100):
     query_emb = get_embedding([query])
     distances, indices = index.search(query_emb, k)
     print("📏 Distances :", distances[0])
@@ -22,11 +22,21 @@ def generate_answer(query, docs):
     if not docs:
         return "Je ne dispose pas d'informations pertinentes pour répondre à cette question."
 
-    #contexte = "\n---\n".join(docs)
-    contexte = docs[0]
-    prompt = f"{contexte}\nQuestion: {query}\nRéponse:"
+    # Mise en minuscule de la question
+    query = query.lower()
 
-    result = generate(prompt)
+    # On formate le contexte en séparant les documents par une ligne ".\n"
+    contexte = ".\n".join(docs)
+
+    # Prompt clair avec consigne
+    prompt = (
+    f"question: {query} context: {contexte} "
+    f"please answer in a complete sentence."
+)
+
+    result = generate(prompt, temperature=0.5)
+
+    # Nettoyage si le modèle répète "Réponse :"
     if "Réponse :" in result:
         result = result.split("Réponse :")[-1].strip()
 
