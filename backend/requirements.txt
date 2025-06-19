@@ -1,7 +1,10 @@
 fastapi
 uvicorn
 transformers
-torch
 datasets
 pandas
 faiss-cpu
+--index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+torchaudio
