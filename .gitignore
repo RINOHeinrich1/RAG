@@ -2,3 +2,4 @@ lib
 lib64
 bin
 include
+frontend/node_modules/
