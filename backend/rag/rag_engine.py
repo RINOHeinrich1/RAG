@@ -6,6 +6,8 @@ from rag.cache import get_cache, set_cache
 
 def retrieve_documents(index, dataset, query, k=3, threshold=40):
     query_emb = get_embedding([query])
+    print("➡️ Dimension embedding requête :", query_emb.shape)
+    print("➡️ Dimension index FAISS :", index.d)
     distances, indices = index.search(query_emb, k)
     print("📏 Distances :", distances[0])
     return [

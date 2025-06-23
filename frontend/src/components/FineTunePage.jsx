@@ -43,12 +43,12 @@ export default function FineTunePage() {
 
   const submitFeedback = async (useAllDocs = false) => {
     const positives = useAllDocs
-      ? selectedAllDocs.map(i => allDocs[i])
-      : selected.map(i => results[i].doc);
+      ? selectedAllDocs.map((i) => allDocs[i])
+      : selected.map((i) => results[i].doc);
 
     const negatives = useAllDocs
       ? allDocs.filter((_, i) => !selectedAllDocs.includes(i))
-      : results.filter((_, i) => !selected.includes(i)).map(r => r.doc);
+      : results.filter((_, i) => !selected.includes(i)).map((r) => r.doc);
 
     setStatus("Envoi du feedback...");
     try {
@@ -62,6 +62,17 @@ export default function FineTunePage() {
     } catch (err) {
       console.error(err);
       setStatus("❌ Erreur lors de l’envoi du feedback.");
+    }
+  };
+  const deployModel = async () => {
+    setStatus("📦 Déploiement du modèle en cours...");
+    try {
+      const res = await axios.post(`${API_URL}/deploy`);
+      const msg = res.data.message || "✅ Modèle déployé avec succès !";
+      setStatus(msg);
+    } catch (err) {
+      console.error(err);
+      setStatus("❌ Erreur lors du déploiement du modèle.");
     }
   };
 
@@ -92,7 +103,9 @@ export default function FineTunePage() {
                   checked={selected.includes(i)}
                   onChange={() =>
                     setSelected((prev) =>
-                      prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
+                      prev.includes(i)
+                        ? prev.filter((x) => x !== i)
+                        : [...prev, i]
                     )
                   }
                   style={{ marginRight: "8px" }}
@@ -112,7 +125,11 @@ export default function FineTunePage() {
 
             <button
               onClick={fetchAllDocs}
-              style={{ padding: "10px 20px", backgroundColor: "#f44336", color: "white" }}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "#f44336",
+                color: "white",
+              }}
             >
               🚫 Aucun document n’est correct
             </button>
@@ -131,7 +148,9 @@ export default function FineTunePage() {
                   checked={selectedAllDocs.includes(i)}
                   onChange={() =>
                     setSelectedAllDocs((prev) =>
-                      prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
+                      prev.includes(i)
+                        ? prev.filter((x) => x !== i)
+                        : [...prev, i]
                     )
                   }
                   style={{ marginRight: "8px" }}
@@ -143,7 +162,12 @@ export default function FineTunePage() {
 
           <button
             onClick={() => submitFeedback(true)}
-            style={{ marginTop: "10px", padding: "10px 20px", backgroundColor: "#4CAF50", color: "white" }}
+            style={{
+              marginTop: "10px",
+              padding: "10px 20px",
+              backgroundColor: "#4CAF50",
+              color: "white",
+            }}
           >
             ✅ Envoyer les bons documents
           </button>
@@ -151,10 +175,34 @@ export default function FineTunePage() {
       )}
 
       {status && (
-        <p style={{ marginTop: "20px", color: status.includes("❌") ? "red" : "green" }}>
+        <p
+          style={{
+            marginTop: "20px",
+            color: status.includes("❌") ? "red" : "green",
+          }}
+        >
           📝 {status}
         </p>
       )}
+      <div
+        style={{
+          marginTop: "30px",
+          borderTop: "1px solid #ccc",
+          paddingTop: "20px",
+        }}
+      >
+        <h2>🚀 Déploiement</h2>
+        <button
+          onClick={deployModel}
+          style={{
+            padding: "10px 25px",
+            backgroundColor: "#2196F3",
+            color: "white",
+          }}
+        >
+          🚀 Déployer le modèle actuel
+        </button>
+      </div>
     </div>
   );
 }
