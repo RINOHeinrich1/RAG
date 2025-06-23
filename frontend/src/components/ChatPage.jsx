@@ -1,73 +1,114 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { askQuestion } from "../api";
 
 export default function ChatPage() {
   const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
-  const [documents, setDocuments] = useState([]);
+  const [messages, setMessages] = useState(() => {
+    return JSON.parse(localStorage.getItem("chat_history") || "[]");
+  });
   const [loading, setLoading] = useState(false);
+  const chatEndRef = useRef(null);
 
-  const handleAsk = async () => {
-    if (!question.trim()) return;
-    setLoading(true);
-    try {
-      const res = await askQuestion(question);
-      setAnswer(res.answer);
-      setDocuments(res.documents);
-    } catch (err) {
-      console.error("Erreur lors de l'appel API :", err);
-      setAnswer("Erreur lors de la génération de la réponse.");
-      setDocuments([]);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    localStorage.setItem("chat_history", JSON.stringify(messages));
+  }, [messages]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+const handleAsk = async () => {
+  const trimmed = question.trim();
+  if (!trimmed) return;
+
+  setQuestion("");
+  setLoading(true);
+
+  try {
+    const res = await askQuestion(trimmed);
+    setMessages((prev) => [
+      ...prev,
+      { type: "question", text: trimmed },
+      {
+        type: "answer",
+        text: res.answer,
+        docs: res.documents,
+      },
+    ]);
+  } catch (err) {
+    setMessages((prev) => [
+      ...prev,
+      { type: "question", text: trimmed },
+      {
+        type: "answer",
+        text: "❌ Erreur lors de l'appel au modèle.",
+        docs: [],
+      },
+    ]);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  const clearChat = () => {
+    localStorage.removeItem("chat_history");
+    setMessages([]);
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 flex items-center justify-center p-4">
-      <div className="bg-white shadow-lg rounded-xl p-8 max-w-2xl w-full mx-auto">
-        <h1 className="text-3xl font-bold text-blue-800 mb-6 text-center">
-          Pose ta question
-        </h1>
+    <div className="min-h-screen bg-gray-100 p-4 flex flex-col items-center">
+      <div className="w-full max-w-2xl bg-white shadow-md rounded-lg p-6 flex flex-col space-y-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-blue-700">💬 Chat ESTI</h1>
+          <button
+            onClick={clearChat}
+            className="text-sm text-red-500 hover:underline"
+          >
+            🗑️ Effacer
+          </button>
+        </div>
 
-        <input
-          type="text"
-          placeholder="Ex: Qu'est-ce que l'ESTI ?"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleAsk()}
-          className="w-full border border-blue-300 rounded px-4 py-2 mb-4"
-        />
+        <div className="flex-1 overflow-y-auto max-h-[500px] space-y-4">
+          {messages.map((msg, idx) => (
+            <div
+              key={idx}
+              className={`p-3 rounded-lg shadow text-sm ${
+                msg.type === "question"
+                  ? "bg-blue-100 self-end text-right"
+                  : "bg-gray-100 self-start text-left"
+              }`}
+            >
+              <p>{msg.text}</p>
+              {msg.docs && (
+                <ul className="mt-2 text-xs text-gray-600 list-disc list-inside">
+                  {msg.docs.map((doc, i) => (
+                    <li key={i}>{doc}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+          <div ref={chatEndRef}></div>
+        </div>
 
-        <button
-          onClick={handleAsk}
-          disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded w-full"
-        >
-          {loading ? "Chargement..." : "Envoyer"}
-        </button>
-
-        {documents.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold text-blue-600 mb-2">
-              📄 Documents :
-            </h2>
-            <ul className="list-disc list-inside space-y-1 text-gray-700">
-              {documents.map((doc, idx) => (
-                <li key={idx}>{doc}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {answer && (
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold text-blue-600 mb-2">
-              🤖 Réponse :
-            </h2>
-            <p className="text-gray-800 bg-blue-100 p-4 rounded">{answer}</p>
-          </div>
-        )}
+        <div className="flex space-x-2">
+          <input
+            type="text"
+            placeholder="Pose ta question..."
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAsk()}
+            className="flex-1 border border-blue-300 rounded px-4 py-2"
+          />
+          <button
+            onClick={handleAsk}
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >
+            {loading ? "..." : "Envoyer"}
+          </button>
+        </div>
       </div>
     </div>
   );
