@@ -3,5 +3,8 @@ lib64
 bin
 include
 models/
+backend/embeddings/
 *.pyc
+*.npy
+*.index
 frontend/node_modules/__pycache__/
