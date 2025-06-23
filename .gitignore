@@ -2,4 +2,5 @@ lib
 lib64
 bin
 include
+*.pyc
 frontend/node_modules/__pycache__/
