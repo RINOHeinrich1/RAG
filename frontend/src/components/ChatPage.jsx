@@ -60,7 +60,7 @@ const handleAsk = async () => {
     <div className="min-h-screen bg-gray-100 p-4 flex flex-col items-center">
       <div className="w-full max-w-2xl bg-white shadow-md rounded-lg p-6 flex flex-col space-y-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-700">💬 Chat ESTI</h1>
+          <h1 className="text-2xl font-bold text-blue-700">💬 ONIRCHAT</h1>
           <button
             onClick={clearChat}
             className="text-sm text-red-500 hover:underline"
