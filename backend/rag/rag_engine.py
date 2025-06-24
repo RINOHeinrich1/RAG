@@ -26,7 +26,7 @@ def generate_answer(query, docs):
 
     #contexte = "\n---\n".join(docs)
     contexte = docs[0]
-    prompt = f"{contexte}\nQuestion: {query}\nRéponse:"
+    prompt = f"{contexte}\nQuestion: {query}\Answer:"
 
     result = generate(prompt)
     if "Réponse :" in result:

@@ -5,7 +5,7 @@ import numpy as np
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-DEFAULT_MODEL_NAME = "dangvantuan/sentence-camembert-large"
+DEFAULT_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2' #"dangvantuan/sentence-camembert-large"
 MODELS_DIR = "./models"
 
 def get_latest_model_path():
