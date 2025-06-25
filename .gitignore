@@ -4,6 +4,7 @@ bin
 include
 models/
 backend/embeddings/
+backend/.env
 *.pyc
 *.npy
 *.index
