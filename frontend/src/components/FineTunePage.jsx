@@ -1,6 +1,17 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { supabase } from "../lib/supabaseClient";
+import {
+  GraduationCap,
+  Rocket,
+  Search,
+  BookOpen,
+  Brain,
+  XCircle,
+  Clipboard,
+  CheckCircle,
+  FileText,
+} from "lucide-react";
 
 const API_URL = "http://localhost:8001";
 
@@ -13,50 +24,49 @@ export default function FineTunePage() {
   const [allDocs, setAllDocs] = useState([]);
   const [selectedAllDocs, setSelectedAllDocs] = useState([]);
 
- const askQuestion = async () => {
-  setStatus("Recherche...");
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || "";
+  const askQuestion = async () => {
+    setStatus("Recherche...");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || "";
 
-    const res = await axios.post(
-      `${API_URL}/ask`,
-      { question, top_k: 3 },
-      {
+      const res = await axios.post(
+        `${API_URL}/ask`,
+        { question, top_k: 3 },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setResults(res.data.results);
+      setSelected([]);
+      setStatus("Résultats reçus.");
+      setShowAllDocs(false);
+    } catch (err) {
+      console.error(err);
+      setStatus("❌ Erreur lors de la requête.");
+    }
+  };
+
+  const fetchAllDocs = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || "";
+
+      const res = await axios.get(`${API_URL}/documents`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
-    );
-    setResults(res.data.results);
-    setSelected([]);
-    setStatus("Résultats reçus.");
-    setShowAllDocs(false);
-  } catch (err) {
-    console.error(err);
-    setStatus("❌ Erreur lors de la requête.");
-  }
-};
-
-const fetchAllDocs = async () => {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || "";
-
-    const res = await axios.get(`${API_URL}/documents`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    setAllDocs(res.data.documents);
-    setSelectedAllDocs([]);
-    setShowAllDocs(true);
-  } catch (err) {
-    console.error(err);
-    setStatus("❌ Erreur lors de la récupération des documents.");
-  }
-};
-
+      });
+      setAllDocs(res.data.documents);
+      setSelectedAllDocs([]);
+      setShowAllDocs(true);
+    } catch (err) {
+      console.error(err);
+      setStatus("❌ Erreur lors de la récupération des documents.");
+    }
+  };
 
   const submitFeedback = async (useAllDocs = false) => {
     const positives = useAllDocs
@@ -98,14 +108,16 @@ const fetchAllDocs = async () => {
       <div className="w-full max-w-5xl space-y-10 bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-md">
         {/* En-tête */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <h1 className="text-3xl sm:text-4xl font-bold text-indigo-600 dark:text-indigo-400">
-            🎓 Assistant ONIR — Fine-Tuning RAG
+          <h1 className="text-3xl sm:text-4xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+            <GraduationCap className="w-8 h-8" />
+            Assistant ONIR — Fine-Tuning RAG
           </h1>
           <button
             onClick={deployModel}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl shadow transition"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl shadow transition flex items-center gap-2"
           >
-            🚀 Déployer le modèle
+            <Rocket className="w-5 h-5" />
+            Déployer le modèle
           </button>
         </div>
 
@@ -122,16 +134,18 @@ const fetchAllDocs = async () => {
 
         <button
           onClick={askQuestion}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-3 rounded-xl shadow transition"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-3 rounded-xl shadow transition flex items-center gap-2"
         >
-          🔍 Chercher
+          <Search className="w-5 h-5" />
+          Chercher
         </button>
 
         {/* Résultats */}
         {results.length > 0 && !showAllDocs && (
           <div>
-            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-6">
-              📚 Résultats proposés
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-6 flex items-center gap-2">
+              <BookOpen className="w-6 h-6" />
+              Résultats proposés
             </h2>
             <div className="space-y-4">
               {results.map((r, i) => (
@@ -164,15 +178,17 @@ const fetchAllDocs = async () => {
             <div className="mt-6 flex flex-wrap gap-4">
               <button
                 onClick={() => submitFeedback(false)}
-                className="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-lg transition"
+                className="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-lg transition flex items-center gap-2"
               >
-                🧠 Envoyer le feedback
+                <Brain className="w-5 h-5" />
+                Envoyer le feedback
               </button>
               <button
                 onClick={fetchAllDocs}
-                className="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-lg transition"
+                className="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-lg transition flex items-center gap-2"
               >
-                🚫 Aucun document n’est correct
+                <XCircle className="w-5 h-5" />
+                Aucun document n’est correct
               </button>
             </div>
           </div>
@@ -181,8 +197,9 @@ const fetchAllDocs = async () => {
         {/* Tous les documents */}
         {showAllDocs && (
           <div>
-            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-              📋 Tous les documents
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4 flex items-center gap-2">
+              <Clipboard className="w-6 h-6" />
+              Tous les documents
             </h2>
             <div className="space-y-4">
               {allDocs.map((doc, i) => (
@@ -209,9 +226,10 @@ const fetchAllDocs = async () => {
 
             <button
               onClick={() => submitFeedback(true)}
-              className="mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg transition"
+              className="mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg transition flex items-center gap-2"
             >
-              ✅ Envoyer les bons documents
+              <CheckCircle className="w-5 h-5" />
+              Envoyer les bons documents
             </button>
           </div>
         )}
@@ -219,13 +237,14 @@ const fetchAllDocs = async () => {
         {/* Statut */}
         {status && (
           <div
-            className={`px-5 py-4 rounded-lg text-sm font-medium transition ${
+            className={`px-5 py-4 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
               status.includes("❌")
                 ? "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400"
                 : "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400"
             }`}
           >
-            📝 {status}
+            <FileText className="w-5 h-5" />
+            {status}
           </div>
         )}
       </div>

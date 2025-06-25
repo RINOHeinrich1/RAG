@@ -1,64 +1,67 @@
 import { useState } from "react";
 import axios from "axios";
+import { supabase } from "../lib/supabaseClient";
+import { FileText, Search, UploadCloud, Clock } from "lucide-react";
 
 function DocumentManager() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [uploading, setUploading] = useState(false);
+
   const handleSearch = async () => {
-  if (!query.trim()) return;
+    if (!query.trim()) return;
 
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || "";
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || "";
 
-    const res = await axios.get(`http://localhost:8001/search-docs?q=${query}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+      const res = await axios.get(`http://localhost:8001/search-docs?q=${query}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    setResults(res.data);
-  } catch (err) {
-    console.error("Erreur lors de la recherche :", err);
-  }
-};
+      setResults(res.data);
+    } catch (err) {
+      console.error("Erreur lors de la recherche :", err);
+    }
+  };
 
-const handleFileUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  setUploading(true);
-  const formData = new FormData();
-  formData.append("file", file);
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
 
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || "";
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || "";
 
-    await axios.post("http://localhost:8001/upload-file", formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data",
-      },
-    });
+      await axios.post("http://localhost:8001/upload-file", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-    alert("✅ Fichier indexé !");
-  } catch (err) {
-    alert("❌ Échec de l’upload.");
-    console.error(err);
-  } finally {
-    setUploading(false);
-  }
-};
-
+      alert("✅ Fichier indexé !");
+    } catch (err) {
+      alert("❌ Échec de l’upload.");
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300 font-inter p-6 flex justify-center">
       <div className="w-full max-w-3xl space-y-8 bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-md">
         {/* Titre */}
-        <h1 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
-          📄 Recherche documentaire
+        <h1 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+          <FileText className="w-8 h-8" />
+          Recherche documentaire
         </h1>
 
         {/* Zone de recherche */}
@@ -72,16 +75,18 @@ const handleFileUpload = async (e) => {
           />
           <button
             onClick={handleSearch}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl transition shadow"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl transition shadow flex items-center gap-2"
           >
-            🔍 Rechercher
+            <Search className="w-5 h-5" />
+            Rechercher
           </button>
         </div>
 
         {/* Upload fichier */}
         <div>
-          <label className="block font-medium mb-2 text-gray-700 dark:text-gray-200">
-            📤 Uploader un fichier :
+          <label className="block font-medium mb-2 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+            <UploadCloud className="w-6 h-6" />
+            Uploader un fichier :
           </label>
           <input
             type="file"
@@ -89,8 +94,9 @@ const handleFileUpload = async (e) => {
             className="block w-full text-sm text-gray-600 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
           />
           {uploading && (
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 italic animate-pulse">
-              ⏳ Indexation en cours...
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 italic flex items-center gap-2 animate-pulse">
+              <Clock className="w-5 h-5" />
+              Indexation en cours...
             </p>
           )}
         </div>
