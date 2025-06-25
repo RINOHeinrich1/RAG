@@ -2,5 +2,10 @@ lib
 lib64
 bin
 include
+models/
+backend/embeddings/
 *.pyc
+*.npy
+*.index
+*.env
 frontend/node_modules/__pycache__/
