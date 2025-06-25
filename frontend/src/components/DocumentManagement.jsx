@@ -3,6 +3,8 @@ import axios from "axios";
 import { supabase } from "../lib/supabaseClient";
 import { FileText, Search, UploadCloud, Clock } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_TUNE_API_URL;
+
 function DocumentManager() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -15,7 +17,7 @@ function DocumentManager() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || "";
 
-      const res = await axios.get(`http://localhost:8001/search-docs?q=${query}`, {
+      const res = await axios.get(`${API_URL}/search-docs?q=${query}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -39,7 +41,7 @@ function DocumentManager() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || "";
 
-      await axios.post("http://localhost:8001/upload-file", formData, {
+      await axios.post(`${API_URL}/upload-file`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",

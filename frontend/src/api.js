@@ -2,12 +2,12 @@ import axios from "axios";
 
 // --- Service 1: Chat (RAG) ---
 const chatApi = axios.create({
-  baseURL: "http://localhost:8000", // service de génération de réponse
+  baseURL: import.meta.env.VITE_CHAT_API_URL, // service de génération de réponse
 });
 
 // --- Service 2: Fine-tuning ---
 const tuneApi = axios.create({
-  baseURL: "http://localhost:8001", // service de fine-tune et recherche
+  baseURL: import.meta.env.VITE_TUNE_API_URL, // service de fine-tune et recherche
 });
 
 // --- Fonctions pour le service de chat ---

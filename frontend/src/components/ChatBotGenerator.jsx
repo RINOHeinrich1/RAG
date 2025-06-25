@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import ChatPage from "./ChatPage";
 import { ClipboardCopy, X } from "lucide-react";
 
+const FRONT_URL= import.meta.env.VITE_FRONT_URL;
 export default function EmbedGenerator() {
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -31,7 +32,7 @@ export default function EmbedGenerator() {
       iframe = null;
     } else {
       iframe = document.createElement("iframe");
-      iframe.src = "http://localhost:5173/chat-widget";
+      iframe.src = "${FRONT_URL}/chat-widget";
       iframe.style.position = "fixed";
       iframe.style.bottom = "80px";
       iframe.style.right = "20px";
