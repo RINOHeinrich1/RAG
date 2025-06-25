@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { supabase } from "../lib/supabaseClient";
 
 const API_URL = "http://localhost:8001";
 
@@ -12,34 +13,50 @@ export default function FineTunePage() {
   const [allDocs, setAllDocs] = useState([]);
   const [selectedAllDocs, setSelectedAllDocs] = useState([]);
 
-  const askQuestion = async () => {
-    setStatus("Recherche...");
-    try {
-      const res = await axios.post(`${API_URL}/ask`, {
-        question,
-        top_k: 3,
-      });
-      setResults(res.data.results);
-      setSelected([]);
-      setStatus("Résultats reçus.");
-      setShowAllDocs(false);
-    } catch (err) {
-      console.error(err);
-      setStatus("❌ Erreur lors de la requête.");
-    }
-  };
+ const askQuestion = async () => {
+  setStatus("Recherche...");
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || "";
 
-  const fetchAllDocs = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/documents`);
-      setAllDocs(res.data.documents);
-      setSelectedAllDocs([]);
-      setShowAllDocs(true);
-    } catch (err) {
-      console.error(err);
-      setStatus("❌ Erreur lors de la récupération des documents.");
-    }
-  };
+    const res = await axios.post(
+      `${API_URL}/ask`,
+      { question, top_k: 3 },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    setResults(res.data.results);
+    setSelected([]);
+    setStatus("Résultats reçus.");
+    setShowAllDocs(false);
+  } catch (err) {
+    console.error(err);
+    setStatus("❌ Erreur lors de la requête.");
+  }
+};
+
+const fetchAllDocs = async () => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || "";
+
+    const res = await axios.get(`${API_URL}/documents`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    setAllDocs(res.data.documents);
+    setSelectedAllDocs([]);
+    setShowAllDocs(true);
+  } catch (err) {
+    console.error(err);
+    setStatus("❌ Erreur lors de la récupération des documents.");
+  }
+};
+
 
   const submitFeedback = async (useAllDocs = false) => {
     const positives = useAllDocs
@@ -77,143 +94,141 @@ export default function FineTunePage() {
   };
 
   return (
-   <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300 font-inter p-6 flex justify-center">
-  <div className="w-full max-w-5xl space-y-10 bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-md">
-    
-    {/* En-tête */}
-    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-      <h1 className="text-3xl sm:text-4xl font-bold text-indigo-600 dark:text-indigo-400">
-        🎓 Assistant ONIR — Fine-Tuning RAG
-      </h1>
-      <button
-        onClick={deployModel}
-        className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl shadow transition"
-      >
-        🚀 Déployer le modèle
-      </button>
-    </div>
-
-    {/* Input question */}
-    <div>
-      <input
-        type="text"
-        value={question}
-        onChange={(e) => setQuestion(e.target.value)}
-        placeholder="Pose une question..."
-        className="w-full px-5 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-      />
-    </div>
-
-    <button
-      onClick={askQuestion}
-      className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-3 rounded-xl shadow transition"
-    >
-      🔍 Chercher
-    </button>
-
-    {/* Résultats */}
-    {results.length > 0 && !showAllDocs && (
-      <div>
-        <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-6">
-          📚 Résultats proposés
-        </h2>
-        <div className="space-y-4">
-          {results.map((r, i) => (
-            <label
-              key={i}
-              className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm cursor-pointer transition"
-            >
-              <input
-                type="checkbox"
-                checked={selected.includes(i)}
-                onChange={() =>
-                  setSelected((prev) =>
-                    prev.includes(i)
-                      ? prev.filter((x) => x !== i)
-                      : [...prev, i]
-                  )
-                }
-                className="mt-1"
-              />
-              <div>
-                <p className="text-indigo-600 dark:text-indigo-400 font-semibold">
-                  Score : {r.score.toFixed(4)}
-                </p>
-                <p className="text-sm">{r.doc}</p>
-              </div>
-            </label>
-          ))}
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-4">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300 font-inter p-6 flex justify-center">
+      <div className="w-full max-w-5xl space-y-10 bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-md">
+        {/* En-tête */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <h1 className="text-3xl sm:text-4xl font-bold text-indigo-600 dark:text-indigo-400">
+            🎓 Assistant ONIR — Fine-Tuning RAG
+          </h1>
           <button
-            onClick={() => submitFeedback(false)}
-            className="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-lg transition"
+            onClick={deployModel}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl shadow transition"
           >
-            🧠 Envoyer le feedback
-          </button>
-          <button
-            onClick={fetchAllDocs}
-            className="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-lg transition"
-          >
-            🚫 Aucun document n’est correct
+            🚀 Déployer le modèle
           </button>
         </div>
-      </div>
-    )}
 
-    {/* Tous les documents */}
-    {showAllDocs && (
-      <div>
-        <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
-          📋 Tous les documents
-        </h2>
-        <div className="space-y-4">
-          {allDocs.map((doc, i) => (
-            <label
-              key={i}
-              className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm cursor-pointer transition"
-            >
-              <input
-                type="checkbox"
-                checked={selectedAllDocs.includes(i)}
-                onChange={() =>
-                  setSelectedAllDocs((prev) =>
-                    prev.includes(i)
-                      ? prev.filter((x) => x !== i)
-                      : [...prev, i]
-                  )
-                }
-                className="mt-1"
-              />
-              <span className="text-sm">{doc}</span>
-            </label>
-          ))}
+        {/* Input question */}
+        <div>
+          <input
+            type="text"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Pose une question..."
+            className="w-full px-5 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
         </div>
 
         <button
-          onClick={() => submitFeedback(true)}
-          className="mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg transition"
+          onClick={askQuestion}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-3 rounded-xl shadow transition"
         >
-          ✅ Envoyer les bons documents
+          🔍 Chercher
         </button>
-      </div>
-    )}
 
-    {/* Statut */}
-    {status && (
-      <div
-        className={`px-5 py-4 rounded-lg text-sm font-medium transition ${
-          status.includes("❌")
-            ? "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400"
-            : "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400"
-        }`}
-      >
-        📝 {status}
-      </div>
-    )}
-  </div>
-</div>
+        {/* Résultats */}
+        {results.length > 0 && !showAllDocs && (
+          <div>
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-6">
+              📚 Résultats proposés
+            </h2>
+            <div className="space-y-4">
+              {results.map((r, i) => (
+                <label
+                  key={i}
+                  className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm cursor-pointer transition"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(i)}
+                    onChange={() =>
+                      setSelected((prev) =>
+                        prev.includes(i)
+                          ? prev.filter((x) => x !== i)
+                          : [...prev, i]
+                      )
+                    }
+                    className="mt-1"
+                  />
+                  <div>
+                    <p className="text-indigo-600 dark:text-indigo-400 font-semibold">
+                      Score : {r.score.toFixed(4)}
+                    </p>
+                    <p className="text-sm">{r.doc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
 
+            <div className="mt-6 flex flex-wrap gap-4">
+              <button
+                onClick={() => submitFeedback(false)}
+                className="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-lg transition"
+              >
+                🧠 Envoyer le feedback
+              </button>
+              <button
+                onClick={fetchAllDocs}
+                className="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-lg transition"
+              >
+                🚫 Aucun document n’est correct
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Tous les documents */}
+        {showAllDocs && (
+          <div>
+            <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
+              📋 Tous les documents
+            </h2>
+            <div className="space-y-4">
+              {allDocs.map((doc, i) => (
+                <label
+                  key={i}
+                  className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm cursor-pointer transition"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedAllDocs.includes(i)}
+                    onChange={() =>
+                      setSelectedAllDocs((prev) =>
+                        prev.includes(i)
+                          ? prev.filter((x) => x !== i)
+                          : [...prev, i]
+                      )
+                    }
+                    className="mt-1"
+                  />
+                  <span className="text-sm">{doc}</span>
+                </label>
+              ))}
+            </div>
+
+            <button
+              onClick={() => submitFeedback(true)}
+              className="mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg transition"
+            >
+              ✅ Envoyer les bons documents
+            </button>
+          </div>
+        )}
+
+        {/* Statut */}
+        {status && (
+          <div
+            className={`px-5 py-4 rounded-lg text-sm font-medium transition ${
+              status.includes("❌")
+                ? "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400"
+                : "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400"
+            }`}
+          >
+            📝 {status}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

@@ -5,35 +5,53 @@ function DocumentManager() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [uploading, setUploading] = useState(false);
-
   const handleSearch = async () => {
-    if (!query.trim()) return;
-    try {
-      const res = await axios.get(`http://localhost:8001/search-docs?q=${query}`);
-      setResults(res.data);
-    } catch (err) {
-      console.error("Erreur lors de la recherche :", err);
-    }
-  };
+  if (!query.trim()) return;
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || "";
 
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
+    const res = await axios.get(`http://localhost:8001/search-docs?q=${query}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-    try {
-      await axios.post("http://localhost:8001/upload-file", formData);
-      alert("✅ Fichier indexé !");
-    } catch (err) {
-      alert("❌ Échec de l’upload.");
-      console.error(err);
-    } finally {
-      setUploading(false);
-    }
-  };
+    setResults(res.data);
+  } catch (err) {
+    console.error("Erreur lors de la recherche :", err);
+  }
+};
+
+const handleFileUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  setUploading(true);
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || "";
+
+    await axios.post("http://localhost:8001/upload-file", formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    alert("✅ Fichier indexé !");
+  } catch (err) {
+    alert("❌ Échec de l’upload.");
+    console.error(err);
+  } finally {
+    setUploading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300 font-inter p-6 flex justify-center">
