@@ -16,13 +16,13 @@ export default function FineTunePage() {
     setStatus("Recherche...");
     try {
       const res = await axios.post(`${API_URL}/ask`, {
-        question: question,
+        question,
         top_k: 3,
       });
       setResults(res.data.results);
       setSelected([]);
       setStatus("Résultats reçus.");
-      setShowAllDocs(false); // réinitialise vue
+      setShowAllDocs(false);
     } catch (err) {
       console.error(err);
       setStatus("❌ Erreur lors de la requête.");
@@ -53,23 +53,23 @@ export default function FineTunePage() {
     setStatus("Envoi du feedback...");
     try {
       const res = await axios.post(`${API_URL}/feedback`, {
-        question: question,
+        question,
         positive_docs: positives,
         negative_docs: negatives,
       });
       setStatus(res.data.message || "✅ Feedback envoyé !");
-      setShowAllDocs(false); // fermer l'interface après envoi
+      setShowAllDocs(false);
     } catch (err) {
       console.error(err);
       setStatus("❌ Erreur lors de l’envoi du feedback.");
     }
   };
+
   const deployModel = async () => {
     setStatus("📦 Déploiement du modèle en cours...");
     try {
       const res = await axios.post(`${API_URL}/deploy`);
-      const msg = res.data.message || "✅ Modèle déployé avec succès !";
-      setStatus(msg);
+      setStatus(res.data.message || "✅ Modèle déployé avec succès !");
     } catch (err) {
       console.error(err);
       setStatus("❌ Erreur lors du déploiement du modèle.");
@@ -77,132 +77,143 @@ export default function FineTunePage() {
   };
 
   return (
-    <div style={{ padding: "20px", fontFamily: "sans-serif" }}>
-      <h1>🎓 Assistant ESTI (RAG Fine-Tuning)</h1>
+   <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300 font-inter p-6 flex justify-center">
+  <div className="w-full max-w-5xl space-y-10 bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-md">
+    
+    {/* En-tête */}
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+      <h1 className="text-3xl sm:text-4xl font-bold text-indigo-600 dark:text-indigo-400">
+        🎓 Assistant ONIR — Fine-Tuning RAG
+      </h1>
+      <button
+        onClick={deployModel}
+        className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl shadow transition"
+      >
+        🚀 Déployer le modèle
+      </button>
+    </div>
 
+    {/* Input question */}
+    <div>
       <input
         type="text"
         value={question}
-        placeholder="Pose une question..."
         onChange={(e) => setQuestion(e.target.value)}
-        style={{ width: "100%", padding: "10px", marginBottom: "10px" }}
+        placeholder="Pose une question..."
+        className="w-full px-5 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
       />
+    </div>
 
-      <button onClick={askQuestion} style={{ padding: "10px 20px" }}>
-        🔍 Chercher
-      </button>
+    <button
+      onClick={askQuestion}
+      className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-3 rounded-xl shadow transition"
+    >
+      🔍 Chercher
+    </button>
 
-      {results.length > 0 && !showAllDocs && (
-        <div style={{ marginTop: "20px" }}>
-          <h2>📚 Résultats proposés</h2>
+    {/* Résultats */}
+    {results.length > 0 && !showAllDocs && (
+      <div>
+        <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-6">
+          📚 Résultats proposés
+        </h2>
+        <div className="space-y-4">
           {results.map((r, i) => (
-            <div key={i} style={{ marginBottom: "8px" }}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={selected.includes(i)}
-                  onChange={() =>
-                    setSelected((prev) =>
-                      prev.includes(i)
-                        ? prev.filter((x) => x !== i)
-                        : [...prev, i]
-                    )
-                  }
-                  style={{ marginRight: "8px" }}
-                />
-                <strong>(score: {r.score.toFixed(4)})</strong> {r.doc}
-              </label>
-            </div>
+            <label
+              key={i}
+              className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm cursor-pointer transition"
+            >
+              <input
+                type="checkbox"
+                checked={selected.includes(i)}
+                onChange={() =>
+                  setSelected((prev) =>
+                    prev.includes(i)
+                      ? prev.filter((x) => x !== i)
+                      : [...prev, i]
+                  )
+                }
+                className="mt-1"
+              />
+              <div>
+                <p className="text-indigo-600 dark:text-indigo-400 font-semibold">
+                  Score : {r.score.toFixed(4)}
+                </p>
+                <p className="text-sm">{r.doc}</p>
+              </div>
+            </label>
           ))}
-
-          <div style={{ marginTop: "15px" }}>
-            <button
-              onClick={() => submitFeedback(false)}
-              style={{ padding: "10px 20px", marginRight: "10px" }}
-            >
-              🧠 Envoyer le feedback
-            </button>
-
-            <button
-              onClick={fetchAllDocs}
-              style={{
-                padding: "10px 20px",
-                backgroundColor: "#f44336",
-                color: "white",
-              }}
-            >
-              🚫 Aucun document n’est correct
-            </button>
-          </div>
         </div>
-      )}
 
-      {showAllDocs && (
-        <div style={{ marginTop: "20px" }}>
-          <h2>📋 Tous les documents</h2>
-          {allDocs.map((doc, i) => (
-            <div key={i} style={{ marginBottom: "8px" }}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={selectedAllDocs.includes(i)}
-                  onChange={() =>
-                    setSelectedAllDocs((prev) =>
-                      prev.includes(i)
-                        ? prev.filter((x) => x !== i)
-                        : [...prev, i]
-                    )
-                  }
-                  style={{ marginRight: "8px" }}
-                />
-                {doc}
-              </label>
-            </div>
-          ))}
-
+        <div className="mt-6 flex flex-wrap gap-4">
           <button
-            onClick={() => submitFeedback(true)}
-            style={{
-              marginTop: "10px",
-              padding: "10px 20px",
-              backgroundColor: "#4CAF50",
-              color: "white",
-            }}
+            onClick={() => submitFeedback(false)}
+            className="bg-green-500 hover:bg-green-600 text-white px-5 py-2.5 rounded-lg transition"
           >
-            ✅ Envoyer les bons documents
+            🧠 Envoyer le feedback
+          </button>
+          <button
+            onClick={fetchAllDocs}
+            className="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-lg transition"
+          >
+            🚫 Aucun document n’est correct
           </button>
         </div>
-      )}
+      </div>
+    )}
 
-      {status && (
-        <p
-          style={{
-            marginTop: "20px",
-            color: status.includes("❌") ? "red" : "green",
-          }}
-        >
-          📝 {status}
-        </p>
-      )}
-      <div
-        style={{
-          marginTop: "30px",
-          borderTop: "1px solid #ccc",
-          paddingTop: "20px",
-        }}
-      >
-        <h2>🚀 Déploiement</h2>
+    {/* Tous les documents */}
+    {showAllDocs && (
+      <div>
+        <h2 className="text-2xl font-semibold text-indigo-600 dark:text-indigo-400 mb-4">
+          📋 Tous les documents
+        </h2>
+        <div className="space-y-4">
+          {allDocs.map((doc, i) => (
+            <label
+              key={i}
+              className="flex gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm cursor-pointer transition"
+            >
+              <input
+                type="checkbox"
+                checked={selectedAllDocs.includes(i)}
+                onChange={() =>
+                  setSelectedAllDocs((prev) =>
+                    prev.includes(i)
+                      ? prev.filter((x) => x !== i)
+                      : [...prev, i]
+                  )
+                }
+                className="mt-1"
+              />
+              <span className="text-sm">{doc}</span>
+            </label>
+          ))}
+        </div>
+
         <button
-          onClick={deployModel}
-          style={{
-            padding: "10px 25px",
-            backgroundColor: "#2196F3",
-            color: "white",
-          }}
+          onClick={() => submitFeedback(true)}
+          className="mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg transition"
         >
-          🚀 Déployer le modèle actuel
+          ✅ Envoyer les bons documents
         </button>
       </div>
-    </div>
+    )}
+
+    {/* Statut */}
+    {status && (
+      <div
+        className={`px-5 py-4 rounded-lg text-sm font-medium transition ${
+          status.includes("❌")
+            ? "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-400"
+            : "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-400"
+        }`}
+      >
+        📝 {status}
+      </div>
+    )}
+  </div>
+</div>
+
   );
 }
