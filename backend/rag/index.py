@@ -23,3 +23,18 @@ def build_or_load_index(dataset):
         index.add(embeddings)
         faiss.write_index(index, INDEX_FILE)
     return index
+
+def build_faiss_index(embeddings: np.ndarray):
+    """
+    Construit un index FAISS à partir des embeddings fournis.
+
+    Args:
+        embeddings (np.ndarray): Matrice (N x D) des embeddings normalisés (float32).
+
+    Returns:
+        faiss.IndexFlatIP: Index FAISS basé sur le produit scalaire (inner product).
+    """
+    d = embeddings.shape[1]  # dimension des embeddings
+    index = faiss.IndexFlatIP(d)  # produit scalaire (inner product) = cosine similarity si embeddings normalisés
+    index.add(embeddings)
+    return index

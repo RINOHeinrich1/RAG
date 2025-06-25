@@ -1,20 +1,40 @@
+from qdrant_client import QdrantClient
+from qdrant_client.models import Filter, FieldCondition, MatchValue
 from datasets import Dataset
 import pandas as pd
+import os
+from dotenv import load_dotenv
 
-from datasets import Dataset
-import pandas as pd
+load_dotenv()
+
+# Connexion au client Qdrant
+client = QdrantClient(
+    url=os.getenv("QDRANT_URL"),
+    api_key=os.getenv("QDRANT_API_KEY"),
+)
+
+COLLECTION = os.getenv("COLLECTION_NAME")
 
 def load_knowledge_base():
-    data = {
-        "texte": [
-            "L'ESTI se trouve à Antananarivo, Madagascar.",
-            "L'ESTI propose des formations dans les domaines de l'informatique, du développement logiciel, des réseaux, de la cybersécurité et du management des systèmes d'information.",
-            "Les diplômes délivrés par l'ESTI sont homologués et reconnus par l'État malgache.",
-            "L'ESTI offre un programme de formation initiale de deux ans appelé MSI (Maintenance des Systèmes Informatiques), qui mène à un DTS agréé par l'État.",
-            "En plus des formations initiales, l'ESTI propose aussi des formations modulaires qui débouchent sur des certificats professionnels.",
-            "L'ESTI accompagne ses étudiants vers des carrières en freelancing ou dans des entreprises du secteur numérique.",
-            "Le contact téléphonique de l'ESTI est 0330828086, 0340220452 ou 0320420452."
-        ]
-    }
-    return Dataset.from_pandas(pd.DataFrame(data))
+    # Récupérer tous les points avec pagination (si besoin)
+    all_points = []
+    offset = None
 
+    while True:
+        result = client.scroll(
+            collection_name=COLLECTION,
+            limit=100,
+            offset=offset,
+            with_payload=True,
+        )
+        points, next_offset = result
+        all_points.extend(points)
+        if not next_offset:
+            break
+        offset = next_offset
+
+    # Extraire les champs de texte
+    texts = [pt.payload.get("text") for pt in all_points if "text" in pt.payload]
+
+    # Créer un dataset Hugging Face
+    return Dataset.from_pandas(pd.DataFrame({"texte": texts}))
