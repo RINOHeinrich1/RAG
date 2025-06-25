@@ -2,14 +2,14 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import ChatPage from "./components/ChatPage";
 import FineTunePage from "./components/FineTunePage";
-import Navbar from "./components/NavBar";
+import Sidebar from "./components/Sidebar";
 import DocumentManager from "./components/DocumentManagement";
 
 export default function App() {
   return (
     <React.StrictMode>
       <Router>
-        <Navbar />
+        <Sidebar />
         <Routes>
           <Route path="/" element={<ChatPage />} />
           <Route path="/chat" element={<ChatPage />} />
